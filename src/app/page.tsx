@@ -43,12 +43,19 @@ import {
   recentActivity,
   notifications,
   courses,
+  generatePortalUrl,
 } from '@/lib/mockData';
 import type { Company } from '@/types';
 import ClientCustomizer from '@/components/ClientCustomizer';
 import CredentialsManager from '@/components/CredentialsManager';
 import ReportsManager from '@/components/ReportsManager';
 import ClientDetailsModal from '@/components/ClientDetailsModal';
+import {
+  companyService,
+  userService,
+  portalAccessService,
+  isSupabaseConfigured,
+} from '@/lib/supabase';
 
 // Portal domain configuration
 const PORTAL_DOMAINS = {
@@ -131,17 +138,37 @@ export default function SalesDashboard() {
   };
 
   // Handle save client config
-  const handleSaveClient = (config: Partial<Company>) => {
+  const handleSaveClient = async (config: Partial<Company>) => {
     if (selectedClient) {
       // Update existing client
-      setCompanies(prev =>
-        prev.map(c => c.id === selectedClient.id ? { ...c, ...config, updatedAt: new Date().toISOString() } : c)
-      );
-      showToast(`${config.name || selectedClient.name} updated successfully!`);
+      try {
+        if (isSupabaseConfigured()) {
+          await companyService.update(selectedClient.id, {
+            name: config.name,
+            slug: config.slug,
+            industry: config.industry,
+            size: config.size,
+            branding: config.branding,
+            features: config.features,
+            admin_email: config.adminEmail,
+            support_email: config.supportEmail,
+            subscription_tier: config.subscriptionTier,
+          });
+        }
+        setCompanies(prev =>
+          prev.map(c => c.id === selectedClient.id ? { ...c, ...config, updatedAt: new Date().toISOString() } : c)
+        );
+        showToast(`${config.name || selectedClient.name} updated successfully!`);
+      } catch (error) {
+        console.error('Error updating company:', error);
+        showToast('Failed to update company', 'error');
+      }
     } else {
       // Create new client
+      const newClientId = crypto.randomUUID();
+      const portalUrl = generatePortalUrl(config.slug || 'new-client');
       const newClient: Company = {
-        id: `client-${Date.now()}`,
+        id: newClientId,
         name: config.name || 'New Client',
         slug: config.slug || 'new-client',
         industry: config.industry || 'technology',
@@ -161,10 +188,98 @@ export default function SalesDashboard() {
         updatedAt: new Date().toISOString(),
         createdBy: currentSalesPerson.id,
         salesPerson: currentSalesPerson.name,
-        portalUrl: getStudentPortalUrl(config.slug),
+        portalUrl: portalUrl,
       };
-      setCompanies(prev => [...prev, newClient]);
-      showToast(`${newClient.name} created successfully!`);
+
+      try {
+        // Save to Supabase if configured
+        if (isSupabaseConfigured()) {
+          // Create company in Supabase
+          await companyService.create({
+            id: newClientId,
+            name: newClient.name,
+            slug: newClient.slug,
+            industry: newClient.industry,
+            size: newClient.size,
+            logo_url: newClient.logo,
+            favicon_url: newClient.favicon,
+            branding: newClient.branding,
+            features: newClient.features,
+            admin_email: newClient.adminEmail,
+            support_email: newClient.supportEmail,
+            subscription_tier: newClient.subscriptionTier,
+            subscription_status: newClient.subscriptionStatus,
+            trial_ends_at: newClient.trialEndsAt,
+            portal_url: portalUrl,
+          });
+
+          // Create default admin user
+          const adminUser = await userService.create({
+            company_id: newClientId,
+            email: config.adminEmail || `admin@${newClient.slug}.com`,
+            first_name: 'Admin',
+            last_name: 'User',
+            role: 'admin',
+            is_active: true,
+          });
+
+          // Create default coordinator user
+          const coordinatorUser = await userService.create({
+            company_id: newClientId,
+            email: `coordinator@${newClient.slug}.com`,
+            first_name: 'Training',
+            last_name: 'Coordinator',
+            role: 'coordinator',
+            is_active: true,
+          });
+
+          // Create default learner user
+          const learnerUser = await userService.create({
+            company_id: newClientId,
+            email: `learner@${newClient.slug}.com`,
+            first_name: 'Demo',
+            last_name: 'Learner',
+            role: 'learner',
+            is_active: true,
+          });
+
+          // Create portal access credentials
+          const tempPassword = `Welcome${Math.random().toString(36).slice(-8)}!`;
+          await portalAccessService.create({
+            company_id: newClientId,
+            user_id: adminUser.id,
+            portal_type: 'tc',
+            access_url: portalUrl,
+            temp_password: tempPassword,
+            is_active: true,
+          });
+
+          // Create learner portal access
+          await portalAccessService.create({
+            company_id: newClientId,
+            user_id: learnerUser.id,
+            portal_type: 'student',
+            access_url: portalUrl,
+            temp_password: tempPassword,
+            is_active: true,
+          });
+
+          console.log('Company and default users created in Supabase:', {
+            company: newClientId,
+            adminUser: adminUser.id,
+            coordinatorUser: coordinatorUser.id,
+            learnerUser: learnerUser.id,
+          });
+        }
+
+        setCompanies(prev => [...prev, newClient]);
+        showToast(`${newClient.name} created successfully!`);
+      } catch (error) {
+        console.error('Error creating company:', error);
+        // Still add to local state even if Supabase fails
+        setCompanies(prev => [...prev, newClient]);
+        showToast(`${newClient.name} created locally (database sync failed)`, 'info');
+      }
     }
     setShowCustomizer(false);
   };
