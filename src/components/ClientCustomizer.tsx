@@ -269,7 +269,7 @@ Temporary Password: ${credentials.tempPassword}
                     className="flex-1 bg-transparent outline-none font-medium text-gray-900"
                     placeholder="company-name"
                   />
-                  <span className="text-gray-500">.learn.koenig.com</span>
+                  <span className="text-gray-500">.learnova.training</span>
                 </div>
               </div>
 

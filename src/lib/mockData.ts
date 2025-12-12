@@ -107,7 +107,7 @@ export const companies: Company[] = [
     updatedAt: '2024-12-10',
     createdBy: 'sp-001',
     salesPerson: 'John Smith',
-    portalUrl: 'https://pwc.learn.koenig.com',
+    portalUrl: 'https://pwc.learnova.training',
   },
   {
     id: 'deloitte-001',
@@ -168,7 +168,7 @@ export const companies: Company[] = [
     updatedAt: '2024-12-08',
     createdBy: 'sp-001',
     salesPerson: 'John Smith',
-    portalUrl: 'https://deloitte.learn.koenig.com',
+    portalUrl: 'https://deloitte.learnova.training',
   },
   {
     id: 'acme-001',
@@ -229,7 +229,7 @@ export const companies: Company[] = [
     updatedAt: '2024-12-05',
     createdBy: 'sp-001',
     salesPerson: 'John Smith',
-    portalUrl: 'https://acme.learn.koenig.com',
+    portalUrl: 'https://acme.learnova.training',
   },
   {
     id: 'healthco-001',
@@ -290,7 +290,7 @@ export const companies: Company[] = [
     updatedAt: '2024-12-10',
     createdBy: 'sp-002',
     salesPerson: 'Sarah Johnson',
-    portalUrl: 'https://healthco.learn.koenig.com',
+    portalUrl: 'https://healthco.learnova.training',
   },
 ];
 
@@ -611,9 +611,12 @@ export const companyPresets: CompanyPreset[] = [
   },
 ];
 
+// Base domain for white-label portals
+const LEARNOVA_DOMAIN = process.env.NEXT_PUBLIC_LEARNOVA_DOMAIN || 'learnova.training';
+
 // Helper to generate portal URL
 export function generatePortalUrl(slug: string): string {
-  return `https://${slug}.learn.koenig.com`;
+  return `https://${slug}.${LEARNOVA_DOMAIN}`;
 }
 
 // Helper to generate login credentials
