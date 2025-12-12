@@ -614,16 +614,39 @@ export const companyPresets: CompanyPreset[] = [
 // Base domain for white-label portals
 const LEARNOVA_DOMAIN = process.env.NEXT_PUBLIC_LEARNOVA_DOMAIN || 'learnova.training';
 
-// Helper to generate portal URL
-export function generatePortalUrl(slug: string): string {
-  return `https://${slug}.${LEARNOVA_DOMAIN}`;
+// Portal URLs - using path-based routing for easier deployment
+const STUDENT_PORTAL_URL = process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || `https://student.${LEARNOVA_DOMAIN}`;
+const TC_PORTAL_URL = process.env.NEXT_PUBLIC_TC_PORTAL_URL || `https://tc.${LEARNOVA_DOMAIN}`;
+
+// Helper to generate portal URLs for both TC and Student portals
+export function generatePortalUrls(slug: string): { studentPortal: string; tcPortal: string } {
+  return {
+    studentPortal: `${STUDENT_PORTAL_URL}/${slug}`,
+    tcPortal: `${TC_PORTAL_URL}/${slug}`,
+  };
 }
 
-// Helper to generate login credentials
-export function generateCredentials(companySlug: string): { url: string; adminEmail: string; tempPassword: string } {
+// Helper to generate single portal URL (for backwards compatibility)
+export function generatePortalUrl(slug: string): string {
+  return `${STUDENT_PORTAL_URL}/${slug}`;
+}
+
+// Helper to generate login credentials for both portals
+export function generateCredentials(companySlug: string): {
+  studentUrl: string;
+  tcUrl: string;
+  adminEmail: string;
+  coordinatorEmail: string;
+  learnerEmail: string;
+  tempPassword: string;
+} {
+  const urls = generatePortalUrls(companySlug);
   return {
-    url: generatePortalUrl(companySlug),
+    studentUrl: urls.studentPortal,
+    tcUrl: urls.tcPortal,
     adminEmail: `admin@${companySlug}.com`,
+    coordinatorEmail: `coordinator@${companySlug}.com`,
+    learnerEmail: `learner@${companySlug}.com`,
     tempPassword: `Welcome${companySlug.charAt(0).toUpperCase()}${companySlug.slice(1)}2024!`,
   };
 }

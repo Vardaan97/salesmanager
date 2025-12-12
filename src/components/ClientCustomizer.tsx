@@ -17,7 +17,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn, generateSlug, isValidHexColor, getContrastColor } from '@/lib/utils';
-import { companyPresets, generateCredentials } from '@/lib/mockData';
+import { companyPresets, generateCredentials, generatePortalUrls } from '@/lib/mockData';
 import type { Company, CompanyBranding, CompanyFeatures, CompanyIndustry, CompanySize } from '@/types';
 
 interface ClientCustomizerProps {
@@ -87,6 +87,7 @@ export default function ClientCustomizer({ client, onClose, onSave }: ClientCust
 
   const isEditing = !!client;
   const credentials = generateCredentials(config.slug || 'newclient');
+  const portalUrls = generatePortalUrls(config.slug || 'newclient');
 
   const handlePresetSelect = (presetId: string) => {
     const preset = companyPresets.find(p => p.id === presetId);
@@ -141,9 +142,18 @@ export default function ClientCustomizer({ client, onClose, onSave }: ClientCust
 
   const copyCredentials = () => {
     const text = `
-Portal URL: ${credentials.url}
-Admin Email: ${credentials.adminEmail}
-Temporary Password: ${credentials.tempPassword}
+${config.name || 'Company'} Portal Credentials
+==============================
+
+STUDENT PORTAL (for learners):
+URL: ${portalUrls.studentPortal}
+Login: ${credentials.learnerEmail}
+Password: ${credentials.tempPassword}
+
+TC PORTAL (for training coordinators):
+URL: ${portalUrls.tcPortal}
+Login: ${credentials.adminEmail}
+Password: ${credentials.tempPassword}
     `.trim();
     navigator.clipboard.writeText(text);
     setCopied(true);
@@ -768,22 +778,22 @@ Temporary Password: ${credentials.tempPassword}
                   <div>
                     <h3 className="font-semibold text-gray-900">Portal Access Credentials</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      These credentials will be used to access the client's learning portal.
-                      Share these with the client administrator.
+                      Two portals are created for each client: a Student Portal for learners and a TC Portal for training coordinators.
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
+                {/* Student Portal URL */}
                 <div className="bg-white border border-gray-200 rounded-xl p-4">
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                    Portal URL
+                    Student Portal URL
                   </label>
                   <div className="flex items-center justify-between">
-                    <code className="text-sm font-mono text-cyan-600">{credentials.url}</code>
+                    <code className="text-sm font-mono text-cyan-600">{portalUrls.studentPortal}</code>
                     <a
-                      href={credentials.url}
+                      href={portalUrls.studentPortal}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -791,20 +801,51 @@ Temporary Password: ${credentials.tempPassword}
                       <ExternalLink className="w-4 h-4 text-gray-500" />
                     </a>
                   </div>
+                  <p className="text-xs text-gray-400 mt-2">For learners to access courses</p>
                 </div>
 
+                {/* TC Portal URL */}
                 <div className="bg-white border border-gray-200 rounded-xl p-4">
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                    Admin Email
+                    Training Coordinator Portal URL
                   </label>
-                  <code className="text-sm font-mono text-gray-900">{credentials.adminEmail}</code>
+                  <div className="flex items-center justify-between">
+                    <code className="text-sm font-mono text-violet-600">{portalUrls.tcPortal}</code>
+                    <a
+                      href={portalUrls.tcPortal}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <ExternalLink className="w-4 h-4 text-gray-500" />
+                    </a>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">For admins to manage learners and track progress</p>
                 </div>
 
-                <div className="bg-white border border-gray-200 rounded-xl p-4">
-                  <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-                    Temporary Password
-                  </label>
-                  <code className="text-sm font-mono text-gray-900">{credentials.tempPassword}</code>
+                <div className="border-t border-gray-100 pt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-3">Login Credentials</h4>
+
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                      Admin / Coordinator Email
+                    </label>
+                    <code className="text-sm font-mono text-gray-900">{credentials.adminEmail}</code>
+                  </div>
+
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                      Learner Email
+                    </label>
+                    <code className="text-sm font-mono text-gray-900">{credentials.learnerEmail}</code>
+                  </div>
+
+                  <div className="bg-white border border-gray-200 rounded-xl p-4">
+                    <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                      Temporary Password (All Users)
+                    </label>
+                    <code className="text-sm font-mono text-gray-900">{credentials.tempPassword}</code>
+                  </div>
                 </div>
 
                 <button
