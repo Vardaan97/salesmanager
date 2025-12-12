@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Copy,
@@ -17,6 +17,7 @@ import {
   Download,
   GraduationCap,
   UserCog,
+  AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Company } from '@/types';
@@ -34,55 +35,54 @@ interface UserCredentials {
   name: string;
 }
 
-// Portal domain configuration
-const PORTAL_DOMAINS = {
-  student: 'https://student.learnova.training',
-  coordinator: 'https://tc.learnova.training',
-  sales: 'https://sales.learnova.training',
+/**
+ * Portal Domain Configuration
+ * ===========================
+ *
+ * These are the actual deployed Vercel URLs for the three portals.
+ * Update these when you have custom domains configured.
+ *
+ * Current Vercel deployments:
+ * - Student Portal: learnovastudent3.vercel.app
+ * - TC Dashboard: koeniglearnova.vercel.app
+ * - Sales Portal: salesmanager.vercel.app (this app)
+ */
+const PORTAL_URLS = {
+  // Vercel deployment URLs (working)
+  student: process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || 'https://learnovastudent3.vercel.app',
+  coordinator: process.env.NEXT_PUBLIC_TC_PORTAL_URL || 'https://koeniglearnova.vercel.app',
+  sales: process.env.NEXT_PUBLIC_SALES_PORTAL_URL || 'https://salesmanager.vercel.app',
+
+  // Future custom domains (when configured)
+  // student: 'https://student.learnova.training',
+  // coordinator: 'https://tc.learnova.training',
+  // sales: 'https://sales.learnova.training',
 };
 
 // Get the base URL for portals based on role
 function getPortalUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: string): string {
-  // In production, use the actual domains
   if (typeof window !== 'undefined') {
     const host = window.location.host;
 
-    // If running on actual domains, use them
-    if (host.includes('learnova.training')) {
-      switch (role) {
-        case 'learner':
-          return `${PORTAL_DOMAINS.student}?company=${companySlug}`;
-        case 'coordinator':
-          return `${PORTAL_DOMAINS.coordinator}?company=${companySlug}`;
-        case 'admin':
-          return `${PORTAL_DOMAINS.coordinator}?company=${companySlug}&role=admin`;
-        default:
-          return `${PORTAL_DOMAINS.student}?company=${companySlug}`;
-      }
-    }
-
-    // For development/localhost
+    // For development/localhost - use localhost URLs
     if (host.includes('localhost')) {
-      return `http://localhost:3000?company=${companySlug}&role=${role}`;
-    }
-
-    // For Vercel preview deployments, still use the production domains
-    if (host.includes('vercel.app')) {
-      switch (role) {
-        case 'learner':
-          return `${PORTAL_DOMAINS.student}?company=${companySlug}`;
-        case 'coordinator':
-          return `${PORTAL_DOMAINS.coordinator}?company=${companySlug}`;
-        case 'admin':
-          return `${PORTAL_DOMAINS.coordinator}?company=${companySlug}&role=admin`;
-        default:
-          return `${PORTAL_DOMAINS.student}?company=${companySlug}`;
-      }
+      const port = role === 'learner' ? '3001' : role === 'coordinator' || role === 'admin' ? '3002' : '3000';
+      const roleParam = role === 'admin' ? '&role=admin' : '';
+      return `http://localhost:${port}?company=${companySlug}${roleParam}`;
     }
   }
 
-  // Default fallback to production domains
-  return `${PORTAL_DOMAINS.student}?company=${companySlug}`;
+  // Use the actual Vercel deployment URLs
+  switch (role) {
+    case 'learner':
+      return `${PORTAL_URLS.student}?company=${companySlug}`;
+    case 'coordinator':
+      return `${PORTAL_URLS.coordinator}?company=${companySlug}`;
+    case 'admin':
+      return `${PORTAL_URLS.coordinator}?company=${companySlug}&role=admin`;
+    default:
+      return `${PORTAL_URLS.student}?company=${companySlug}`;
+  }
 }
 
 export default function CredentialsManager({ company, onClose }: CredentialsManagerProps) {

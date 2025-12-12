@@ -36,11 +36,17 @@ interface ClientDetailsModalProps {
   onViewReports: () => void;
 }
 
-// Portal domain configuration
-const PORTAL_DOMAINS = {
-  student: 'https://student.learnova.training',
-  coordinator: 'https://tc.learnova.training',
-  sales: 'https://sales.learnova.training',
+/**
+ * Portal URLs Configuration
+ * =========================
+ *
+ * Actual Vercel deployment URLs for the three portals.
+ * These are the working URLs that credentials should link to.
+ */
+const PORTAL_URLS = {
+  student: process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || 'https://learnovastudent3.vercel.app',
+  coordinator: process.env.NEXT_PUBLIC_TC_PORTAL_URL || 'https://koeniglearnova.vercel.app',
+  sales: process.env.NEXT_PUBLIC_SALES_PORTAL_URL || 'https://salesmanager.vercel.app',
 };
 
 // Get portal URL based on role
@@ -48,19 +54,21 @@ function getPortalUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: st
   if (typeof window !== 'undefined') {
     const host = window.location.host;
     if (host.includes('localhost')) {
-      return `http://localhost:3000?company=${companySlug}&role=${role}`;
+      const port = role === 'learner' ? '3001' : role === 'coordinator' || role === 'admin' ? '3002' : '3000';
+      const roleParam = role === 'admin' ? '&role=admin' : '';
+      return `http://localhost:${port}?company=${companySlug}${roleParam}`;
     }
   }
-  // Use production domains
+  // Use actual Vercel deployment URLs
   switch (role) {
     case 'learner':
-      return `${PORTAL_DOMAINS.student}?company=${companySlug}`;
+      return `${PORTAL_URLS.student}?company=${companySlug}`;
     case 'coordinator':
-      return `${PORTAL_DOMAINS.coordinator}?company=${companySlug}`;
+      return `${PORTAL_URLS.coordinator}?company=${companySlug}`;
     case 'admin':
-      return `${PORTAL_DOMAINS.coordinator}?company=${companySlug}&role=admin`;
+      return `${PORTAL_URLS.coordinator}?company=${companySlug}&role=admin`;
     default:
-      return `${PORTAL_DOMAINS.student}?company=${companySlug}`;
+      return `${PORTAL_URLS.student}?company=${companySlug}`;
   }
 }
 
