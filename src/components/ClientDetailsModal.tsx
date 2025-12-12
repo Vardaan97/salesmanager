@@ -40,16 +40,24 @@ interface ClientDetailsModalProps {
  * Portal URLs Configuration
  * =========================
  *
- * Actual Vercel deployment URLs for the three portals.
- * These are the working URLs that credentials should link to.
+ * Dynamic subdomain-based URLs for white-label client portals.
+ * Format: {company-slug}.learnova.training
  */
-const PORTAL_URLS = {
+
+// Base domain for white-label portals
+const LEARNOVA_DOMAIN = process.env.NEXT_PUBLIC_LEARNOVA_DOMAIN || 'learnova.training';
+
+// Fallback Vercel URLs
+const FALLBACK_URLS = {
   student: process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || 'https://learnovastudent3.vercel.app',
   coordinator: process.env.NEXT_PUBLIC_TC_PORTAL_URL || 'https://koeniglearnova.vercel.app',
   sales: process.env.NEXT_PUBLIC_SALES_PORTAL_URL || 'https://salesmanager.vercel.app',
 };
 
-// Get portal URL based on role
+// Check if custom domain is configured
+const useCustomDomain = process.env.NEXT_PUBLIC_USE_CUSTOM_DOMAIN === 'true';
+
+// Get portal URL based on role (actual working URL)
 function getPortalUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: string): string {
   if (typeof window !== 'undefined') {
     const host = window.location.host;
@@ -59,16 +67,47 @@ function getPortalUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: st
       return `http://localhost:${port}?company=${companySlug}${roleParam}`;
     }
   }
-  // Use actual Vercel deployment URLs
+
+  // Use custom subdomain format if configured
+  if (useCustomDomain) {
+    const baseUrl = `https://${companySlug}.${LEARNOVA_DOMAIN}`;
+    switch (role) {
+      case 'learner':
+        return baseUrl;
+      case 'coordinator':
+        return `${baseUrl}/tc`;
+      case 'admin':
+        return `${baseUrl}/admin`;
+      default:
+        return baseUrl;
+    }
+  }
+
+  // Fallback to Vercel deployment URLs
   switch (role) {
     case 'learner':
-      return `${PORTAL_URLS.student}?company=${companySlug}`;
+      return `${FALLBACK_URLS.student}?company=${companySlug}`;
     case 'coordinator':
-      return `${PORTAL_URLS.coordinator}?company=${companySlug}`;
+      return `${FALLBACK_URLS.coordinator}?company=${companySlug}`;
     case 'admin':
-      return `${PORTAL_URLS.coordinator}?company=${companySlug}&role=admin`;
+      return `${FALLBACK_URLS.coordinator}?company=${companySlug}&role=admin`;
     default:
-      return `${PORTAL_URLS.student}?company=${companySlug}`;
+      return `${FALLBACK_URLS.student}?company=${companySlug}`;
+  }
+}
+
+// Generate display URL (user-friendly format)
+function getDisplayUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: string): string {
+  const baseUrl = `https://${companySlug}.${LEARNOVA_DOMAIN}`;
+  switch (role) {
+    case 'learner':
+      return baseUrl;
+    case 'coordinator':
+      return `${baseUrl}/tc`;
+    case 'admin':
+      return `${baseUrl}/admin`;
+    default:
+      return baseUrl;
   }
 }
 
@@ -88,6 +127,13 @@ export default function ClientDetailsModal({
     admin: getPortalUrl('admin', company.slug),
     coordinator: getPortalUrl('coordinator', company.slug),
     learner: getPortalUrl('learner', company.slug),
+  };
+
+  // Display URLs (user-friendly format)
+  const displayUrls = {
+    admin: getDisplayUrl('admin', company.slug),
+    coordinator: getDisplayUrl('coordinator', company.slug),
+    learner: getDisplayUrl('learner', company.slug),
   };
 
   // Generate credentials
@@ -313,6 +359,7 @@ export default function ClientDetailsModal({
               ].map((portal) => {
                 const Icon = portal.icon;
                 const url = portalUrls[portal.role as keyof typeof portalUrls];
+                const displayUrl = displayUrls[portal.role as keyof typeof displayUrls];
                 const creds = credentials[portal.role as keyof typeof credentials];
 
                 return (
@@ -398,9 +445,9 @@ export default function ClientDetailsModal({
 
                     {/* Portal URL */}
                     <div className="mt-3 flex items-center gap-2">
-                      <code className="text-xs text-gray-500 break-all flex-1">{url}</code>
+                      <code className="text-xs text-gray-500 break-all flex-1">{displayUrl}</code>
                       <button
-                        onClick={() => copyToClipboard(url, `${portal.role}-url`)}
+                        onClick={() => copyToClipboard(displayUrl, `${portal.role}-url`)}
                         className={cn(
                           'p-1 rounded transition-colors',
                           copied === `${portal.role}-url` ? 'text-green-600' : 'text-gray-400 hover:text-gray-600'

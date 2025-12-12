@@ -31,7 +31,8 @@ interface UserCredentials {
   role: 'admin' | 'coordinator' | 'learner';
   email: string;
   password: string;
-  portalUrl: string;
+  portalUrl: string;      // Actual working URL (Vercel or custom domain)
+  displayUrl: string;     // User-friendly URL to show in credentials
   name: string;
 }
 
@@ -39,27 +40,34 @@ interface UserCredentials {
  * Portal Domain Configuration
  * ===========================
  *
- * These are the actual deployed Vercel URLs for the three portals.
- * Update these when you have custom domains configured.
+ * Dynamic subdomain-based URLs for white-label client portals.
+ * Format: {company-slug}.learnova.training
  *
- * Current Vercel deployments:
+ * Examples:
+ * - PWC: pwc.learnova.training
+ * - Accenture: accenture.learnova.training
+ * - TCS: tcs.learnova.training
+ *
+ * Fallback Vercel URLs (for development or if custom domain not configured):
  * - Student Portal: learnovastudent3.vercel.app
  * - TC Dashboard: koeniglearnova.vercel.app
- * - Sales Portal: salesmanager.vercel.app (this app)
+ * - Sales Portal: salesmanager.vercel.app
  */
-const PORTAL_URLS = {
-  // Vercel deployment URLs (working)
+
+// Base domain for white-label portals
+const LEARNOVA_DOMAIN = process.env.NEXT_PUBLIC_LEARNOVA_DOMAIN || 'learnova.training';
+
+// Fallback Vercel URLs
+const FALLBACK_URLS = {
   student: process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || 'https://learnovastudent3.vercel.app',
   coordinator: process.env.NEXT_PUBLIC_TC_PORTAL_URL || 'https://koeniglearnova.vercel.app',
   sales: process.env.NEXT_PUBLIC_SALES_PORTAL_URL || 'https://salesmanager.vercel.app',
-
-  // Future custom domains (when configured)
-  // student: 'https://student.learnova.training',
-  // coordinator: 'https://tc.learnova.training',
-  // sales: 'https://sales.learnova.training',
 };
 
-// Get the base URL for portals based on role
+// Check if custom domain is configured
+const useCustomDomain = process.env.NEXT_PUBLIC_USE_CUSTOM_DOMAIN === 'true';
+
+// Get the base URL for portals based on role and company
 function getPortalUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: string): string {
   if (typeof window !== 'undefined') {
     const host = window.location.host;
@@ -72,16 +80,47 @@ function getPortalUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: st
     }
   }
 
-  // Use the actual Vercel deployment URLs
+  // Use custom subdomain format: {company}.learnova.training
+  if (useCustomDomain) {
+    const baseUrl = `https://${companySlug}.${LEARNOVA_DOMAIN}`;
+    switch (role) {
+      case 'learner':
+        return baseUrl;
+      case 'coordinator':
+        return `${baseUrl}/tc`;
+      case 'admin':
+        return `${baseUrl}/admin`;
+      default:
+        return baseUrl;
+    }
+  }
+
+  // Fallback to Vercel deployment URLs with query params
   switch (role) {
     case 'learner':
-      return `${PORTAL_URLS.student}?company=${companySlug}`;
+      return `${FALLBACK_URLS.student}?company=${companySlug}`;
     case 'coordinator':
-      return `${PORTAL_URLS.coordinator}?company=${companySlug}`;
+      return `${FALLBACK_URLS.coordinator}?company=${companySlug}`;
     case 'admin':
-      return `${PORTAL_URLS.coordinator}?company=${companySlug}&role=admin`;
+      return `${FALLBACK_URLS.coordinator}?company=${companySlug}&role=admin`;
     default:
-      return `${PORTAL_URLS.student}?company=${companySlug}`;
+      return `${FALLBACK_URLS.student}?company=${companySlug}`;
+  }
+}
+
+// Generate display URL for credentials (user-friendly format)
+function getDisplayUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: string): string {
+  // Always show the nice subdomain format in credentials
+  const baseUrl = `https://${companySlug}.${LEARNOVA_DOMAIN}`;
+  switch (role) {
+    case 'learner':
+      return baseUrl;
+    case 'coordinator':
+      return `${baseUrl}/tc`;
+    case 'admin':
+      return `${baseUrl}/admin`;
+    default:
+      return baseUrl;
   }
 }
 
@@ -99,6 +138,7 @@ export default function CredentialsManager({ company, onClose }: CredentialsMana
       email: company.adminEmail || `admin@${company.slug}.com`,
       password: `Admin${company.slug.charAt(0).toUpperCase()}${company.slug.slice(1)}2024!`,
       portalUrl: getPortalUrl('admin', company.slug),
+      displayUrl: getDisplayUrl('admin', company.slug),
     },
     coordinator: {
       role: 'coordinator',
@@ -106,6 +146,7 @@ export default function CredentialsManager({ company, onClose }: CredentialsMana
       email: `coordinator@${company.slug}.com`,
       password: `Train${company.slug.charAt(0).toUpperCase()}${company.slug.slice(1)}2024!`,
       portalUrl: getPortalUrl('coordinator', company.slug),
+      displayUrl: getDisplayUrl('coordinator', company.slug),
     },
     learner: {
       role: 'learner',
@@ -113,6 +154,7 @@ export default function CredentialsManager({ company, onClose }: CredentialsMana
       email: `learner@${company.slug}.com`,
       password: `Learn${company.slug.charAt(0).toUpperCase()}${company.slug.slice(1)}2024!`,
       portalUrl: getPortalUrl('learner', company.slug),
+      displayUrl: getDisplayUrl('learner', company.slug),
     },
   };
 
@@ -129,7 +171,7 @@ export default function CredentialsManager({ company, onClose }: CredentialsMana
 ${company.name} - ${currentCreds.name} Credentials
 ==========================================
 
-Portal URL: ${currentCreds.portalUrl}
+Portal URL: ${currentCreds.displayUrl}
 Email: ${currentCreds.email}
 Password: ${currentCreds.password}
 
@@ -160,7 +202,7 @@ Note: Please change your password after first login.
     allCreds.forEach((cred) => {
       content += `${cred.name}\n`;
       content += `-----------\n`;
-      content += `Portal URL: ${cred.portalUrl}\n`;
+      content += `Portal URL: ${cred.displayUrl}\n`;
       content += `Email: ${cred.email}\n`;
       content += `Password: ${cred.password}\n\n`;
     });
@@ -250,14 +292,15 @@ Note: Please change your password after first login.
               <div className="flex items-center gap-2">
                 <div className="flex-1 flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
                   <ExternalLink className="w-4 h-4 text-gray-400" />
-                  <code className="text-sm text-cyan-600 break-all">{currentCreds.portalUrl}</code>
+                  <code className="text-sm text-cyan-600 break-all">{currentCreds.displayUrl}</code>
                 </div>
                 <button
-                  onClick={() => copyToClipboard(currentCreds.portalUrl, 'url')}
+                  onClick={() => copyToClipboard(currentCreds.displayUrl, 'url')}
                   className={cn(
                     'p-3 rounded-lg transition-colors',
                     copied === 'url' ? 'bg-green-100 text-green-600' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
                   )}
+                  title="Copy URL"
                 >
                   {copied === 'url' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                 </button>
@@ -266,6 +309,7 @@ Note: Please change your password after first login.
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-3 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors"
+                  title="Open Portal"
                 >
                   <ExternalLink className="w-5 h-5" />
                 </a>
