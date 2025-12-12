@@ -188,7 +188,57 @@ Note: Please change your password after first login.
   };
 
   const sendCredentialsEmail = () => {
-    // In a real app, this would send an email via backend
+    // Generate email body with credentials
+    const subject = encodeURIComponent(`${company.name} - ${currentCreds.name} Portal Access Credentials`);
+    const body = encodeURIComponent(`
+Hello,
+
+Here are your ${company.name} ${currentCreds.name} portal access credentials:
+
+Portal URL: ${currentCreds.displayUrl}
+Email: ${currentCreds.email}
+Password: ${currentCreds.password}
+
+Please bookmark the portal URL and change your password after first login.
+
+If you have any questions, please contact your administrator.
+
+Best regards,
+${company.name} Learning Team
+
+---
+This is an automated message from Koenig Learnova Platform.
+    `.trim());
+
+    // Open default email client with pre-filled content
+    window.open(`mailto:${currentCreds.email}?subject=${subject}&body=${body}`, '_blank');
+
+    setEmailSent(true);
+    setTimeout(() => setEmailSent(false), 3000);
+  };
+
+  // Send credentials to a specific email address (e.g., TC email)
+  const sendToRecipient = (recipientEmail: string) => {
+    const subject = encodeURIComponent(`${company.name} - ${currentCreds.name} Portal Access Credentials`);
+    const body = encodeURIComponent(`
+Hello,
+
+Here are the ${company.name} ${currentCreds.name} portal access credentials:
+
+Portal URL: ${currentCreds.displayUrl}
+Email: ${currentCreds.email}
+Password: ${currentCreds.password}
+
+Please share these credentials securely and ask the user to change their password after first login.
+
+Best regards,
+${company.name} Sales Team
+
+---
+This is an automated message from Koenig Learnova Platform.
+    `.trim());
+
+    window.open(`mailto:${recipientEmail}?subject=${subject}&body=${body}`, '_blank');
     setEmailSent(true);
     setTimeout(() => setEmailSent(false), 3000);
   };

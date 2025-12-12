@@ -133,6 +133,77 @@ export default function ClientDetailsModal({
     setTimeout(() => setCopied(null), 2000);
   };
 
+  // Send credentials via email (opens default email client)
+  const sendEmailCredentials = (role: 'admin' | 'coordinator' | 'learner', recipientEmail?: string) => {
+    const creds = credentials[role];
+    const displayUrl = displayUrls[role];
+    const roleLabel = role === 'admin' ? 'Admin' : role === 'coordinator' ? 'Training Coordinator' : 'Learner';
+
+    const subject = encodeURIComponent(`${company.name} - ${roleLabel} Portal Access Credentials`);
+    const body = encodeURIComponent(`
+Hello,
+
+Here are your ${company.name} ${roleLabel} portal access credentials:
+
+Portal URL: ${displayUrl}
+Email: ${creds.email}
+Password: ${creds.password}
+
+Please bookmark the portal URL and change your password after first login.
+
+If you have any questions, please contact your administrator.
+
+Best regards,
+${company.name} Learning Team
+
+---
+This is an automated message from Koenig Learnova Platform.
+    `.trim());
+
+    const recipient = recipientEmail || creds.email;
+    window.open(`mailto:${recipient}?subject=${subject}&body=${body}`, '_blank');
+    setCopied(`${role}-sent`);
+    setTimeout(() => setCopied(null), 3000);
+  };
+
+  // Send all credentials to TC
+  const sendAllToTC = () => {
+    const tcCreds = credentials.coordinator;
+    const subject = encodeURIComponent(`${company.name} - All Portal Access Credentials`);
+    const body = encodeURIComponent(`
+Hello,
+
+Here are all the ${company.name} portal access credentials:
+
+=== ADMIN PORTAL ===
+Portal URL: ${displayUrls.admin}
+Email: ${credentials.admin.email}
+Password: ${credentials.admin.password}
+
+=== TRAINING COORDINATOR PORTAL ===
+Portal URL: ${displayUrls.coordinator}
+Email: ${credentials.coordinator.email}
+Password: ${credentials.coordinator.password}
+
+=== LEARNER PORTAL ===
+Portal URL: ${displayUrls.learner}
+Email: ${credentials.learner.email}
+Password: ${credentials.learner.password}
+
+Please share these credentials securely and ask users to change their passwords after first login.
+
+Best regards,
+${company.name} Sales Team
+
+---
+This is an automated message from Koenig Learnova Platform.
+    `.trim());
+
+    window.open(`mailto:${tcCreds.email}?subject=${subject}&body=${body}`, '_blank');
+    setCopied('all-sent');
+    setTimeout(() => setCopied(null), 3000);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -360,20 +431,35 @@ export default function ClientDetailsModal({
                           <p className="text-sm text-gray-500">{portal.desc}</p>
                         </div>
                       </div>
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={cn(
-                          'flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors',
-                          portal.color === 'violet' && 'bg-violet-600 hover:bg-violet-700',
-                          portal.color === 'blue' && 'bg-blue-600 hover:bg-blue-700',
-                          portal.color === 'green' && 'bg-green-600 hover:bg-green-700'
-                        )}
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Open Portal
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => sendEmailCredentials(portal.role as 'admin' | 'coordinator' | 'learner')}
+                          className={cn(
+                            'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                            copied === `${portal.role}-sent`
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          )}
+                          title="Email credentials"
+                        >
+                          {copied === `${portal.role}-sent` ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+                          {copied === `${portal.role}-sent` ? 'Sent!' : 'Email'}
+                        </button>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(
+                            'flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors',
+                            portal.color === 'violet' && 'bg-violet-600 hover:bg-violet-700',
+                            portal.color === 'blue' && 'bg-blue-600 hover:bg-blue-700',
+                            portal.color === 'green' && 'bg-green-600 hover:bg-green-700'
+                          )}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Open Portal
+                        </a>
+                      </div>
                     </div>
 
                     {/* Credentials */}
@@ -434,6 +520,28 @@ export default function ClientDetailsModal({
                   </div>
                 );
               })}
+
+              {/* Send All Credentials to TC Button */}
+              <div className="mt-6 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-amber-900">Email All Credentials to Training Coordinator</h4>
+                    <p className="text-sm text-amber-700">Send all portal access credentials in one email</p>
+                  </div>
+                  <button
+                    onClick={sendAllToTC}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors',
+                      copied === 'all-sent'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-amber-600 text-white hover:bg-amber-700'
+                    )}
+                  >
+                    {copied === 'all-sent' ? <Check className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
+                    {copied === 'all-sent' ? 'Email Opened!' : 'Send All to TC'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
