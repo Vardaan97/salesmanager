@@ -613,9 +613,11 @@ export const companyPresets: CompanyPreset[] = [
 ];
 
 // Base domain for white-label portals
-const LEARNOVA_DOMAIN = process.env.NEXT_PUBLIC_LEARNOVA_DOMAIN || 'learnova.training';
+const LEARNOVA_DOMAIN = 'learnova.training';
 
-// Portal URLs - using path-based routing for easier deployment
+// Portal URLs - using path-based routing with custom domains
+// These MUST point to the custom domains (student.learnova.training, tc.learnova.training)
+// NOT the Vercel deployment URLs
 const STUDENT_PORTAL_URL = process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || `https://student.${LEARNOVA_DOMAIN}`;
 const TC_PORTAL_URL = process.env.NEXT_PUBLIC_TC_PORTAL_URL || `https://tc.${LEARNOVA_DOMAIN}`;
 
