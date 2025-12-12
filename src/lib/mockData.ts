@@ -1,6 +1,7 @@
 /**
  * Mock Data for Sales Manager Portal
  * In production, this would come from the backend API
+ * Updated: Dec 12, 2024 - Dual portal URLs (Student + TC)
  */
 
 import type {
