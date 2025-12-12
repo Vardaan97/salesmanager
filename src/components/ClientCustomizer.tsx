@@ -267,11 +267,11 @@ Password: ${credentials.tempPassword}
               {/* URL Slug */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Portal URL
+                  Portal URL Slug
                 </label>
                 <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 rounded-xl">
                   <Globe className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-500">https://</span>
+                  <span className="text-gray-500">student.learnova.training/</span>
                   <input
                     type="text"
                     value={config.slug}
@@ -279,8 +279,10 @@ Password: ${credentials.tempPassword}
                     className="flex-1 bg-transparent outline-none font-medium text-gray-900"
                     placeholder="company-name"
                   />
-                  <span className="text-gray-500">.learnova.training</span>
                 </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Student portal: student.learnova.training/{config.slug || 'slug'} | TC portal: tc.learnova.training/{config.slug || 'slug'}
+                </p>
               </div>
 
               {/* Industry & Size */}

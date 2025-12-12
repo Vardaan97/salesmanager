@@ -40,22 +40,14 @@ interface ClientDetailsModalProps {
  * Portal URLs Configuration
  * =========================
  *
- * Dynamic subdomain-based URLs for white-label client portals.
- * Format: {company-slug}.learnova.training
+ * Path-based URLs for white-label client portals.
+ * Format: student.learnova.training/{company-slug}
+ *         tc.learnova.training/{company-slug}
  */
 
-// Base domain for white-label portals
-const LEARNOVA_DOMAIN = process.env.NEXT_PUBLIC_LEARNOVA_DOMAIN || 'learnova.training';
-
-// Fallback Vercel URLs
-const FALLBACK_URLS = {
-  student: process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || 'https://learnovastudent3.vercel.app',
-  coordinator: process.env.NEXT_PUBLIC_TC_PORTAL_URL || 'https://koeniglearnova.vercel.app',
-  sales: process.env.NEXT_PUBLIC_SALES_PORTAL_URL || 'https://salesmanager.vercel.app',
-};
-
-// Check if custom domain is configured
-const useCustomDomain = process.env.NEXT_PUBLIC_USE_CUSTOM_DOMAIN === 'true';
+// Portal base URLs - using path-based routing with custom domains
+const STUDENT_PORTAL_URL = process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || 'https://student.learnova.training';
+const TC_PORTAL_URL = process.env.NEXT_PUBLIC_TC_PORTAL_URL || 'https://tc.learnova.training';
 
 // Get portal URL based on role (actual working URL)
 function getPortalUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: string): string {
@@ -63,51 +55,34 @@ function getPortalUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: st
     const host = window.location.host;
     if (host.includes('localhost')) {
       const port = role === 'learner' ? '3001' : role === 'coordinator' || role === 'admin' ? '3002' : '3000';
-      const roleParam = role === 'admin' ? '&role=admin' : '';
-      return `http://localhost:${port}?company=${companySlug}${roleParam}`;
+      return `http://localhost:${port}/${companySlug}`;
     }
   }
 
-  // Use custom subdomain format if configured
-  if (useCustomDomain) {
-    const baseUrl = `https://${companySlug}.${LEARNOVA_DOMAIN}`;
-    switch (role) {
-      case 'learner':
-        return baseUrl;
-      case 'coordinator':
-        return `${baseUrl}/tc`;
-      case 'admin':
-        return `${baseUrl}/admin`;
-      default:
-        return baseUrl;
-    }
-  }
-
-  // Fallback to Vercel deployment URLs
+  // Use path-based routing: student.learnova.training/{slug} or tc.learnova.training/{slug}
   switch (role) {
     case 'learner':
-      return `${FALLBACK_URLS.student}?company=${companySlug}`;
+      return `${STUDENT_PORTAL_URL}/${companySlug}`;
     case 'coordinator':
-      return `${FALLBACK_URLS.coordinator}?company=${companySlug}`;
+      return `${TC_PORTAL_URL}/${companySlug}`;
     case 'admin':
-      return `${FALLBACK_URLS.coordinator}?company=${companySlug}&role=admin`;
+      return `${TC_PORTAL_URL}/${companySlug}/admin`;
     default:
-      return `${FALLBACK_URLS.student}?company=${companySlug}`;
+      return `${STUDENT_PORTAL_URL}/${companySlug}`;
   }
 }
 
-// Generate display URL (user-friendly format)
+// Generate display URL (user-friendly format - same as actual URL now)
 function getDisplayUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: string): string {
-  const baseUrl = `https://${companySlug}.${LEARNOVA_DOMAIN}`;
   switch (role) {
     case 'learner':
-      return baseUrl;
+      return `https://student.learnova.training/${companySlug}`;
     case 'coordinator':
-      return `${baseUrl}/tc`;
+      return `https://tc.learnova.training/${companySlug}`;
     case 'admin':
-      return `${baseUrl}/admin`;
+      return `https://tc.learnova.training/${companySlug}/admin`;
     default:
-      return baseUrl;
+      return `https://student.learnova.training/${companySlug}`;
   }
 }
 
