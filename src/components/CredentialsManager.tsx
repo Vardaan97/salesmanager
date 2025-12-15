@@ -40,88 +40,65 @@ interface UserCredentials {
  * Portal Domain Configuration
  * ===========================
  *
- * Dynamic subdomain-based URLs for white-label client portals.
- * Format: {company-slug}.learnova.training
+ * Path-based URLs for white-label client portals.
+ * Format: student.learnova.training/{company-slug}
  *
  * Examples:
- * - PWC: pwc.learnova.training
- * - Accenture: accenture.learnova.training
- * - TCS: tcs.learnova.training
+ * - PWC: student.learnova.training/pwc
+ * - Accenture: student.learnova.training/accenture
+ * - RT: student.learnova.training/rt
  *
- * Fallback Vercel URLs (for development or if custom domain not configured):
- * - Student Portal: learnovastudent3.vercel.app
- * - TC Dashboard: koeniglearnova.vercel.app
- * - Sales Portal: salesmanager.vercel.app
+ * Production URLs:
+ * - Student Portal: student.learnova.training/{slug}
+ * - TC Dashboard: tc.learnova.training/{slug}
+ * - Sales Portal: sales.learnova.training
+ *
+ * Fallback Vercel URLs (for development):
+ * - Student Portal: learnovastudent3.vercel.app/{slug}
+ * - TC Dashboard: koeniglearnova.vercel.app/{slug}
  */
 
-// Base domain for white-label portals
-const LEARNOVA_DOMAIN = process.env.NEXT_PUBLIC_LEARNOVA_DOMAIN || 'learnova.training';
-
-// Fallback Vercel URLs
-const FALLBACK_URLS = {
-  student: process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || 'https://learnovastudent3.vercel.app',
-  coordinator: process.env.NEXT_PUBLIC_TC_PORTAL_URL || 'https://koeniglearnova.vercel.app',
-  sales: process.env.NEXT_PUBLIC_SALES_PORTAL_URL || 'https://salesmanager.vercel.app',
+// Portal base URLs
+const PORTAL_URLS = {
+  student: process.env.NEXT_PUBLIC_STUDENT_PORTAL_URL || 'https://student.learnova.training',
+  coordinator: process.env.NEXT_PUBLIC_TC_PORTAL_URL || 'https://tc.learnova.training',
 };
 
-// Check if custom domain is configured
-const useCustomDomain = process.env.NEXT_PUBLIC_USE_CUSTOM_DOMAIN === 'true';
+// Fallback Vercel URLs (when custom domain not available)
+const FALLBACK_URLS = {
+  student: 'https://learnovastudent3.vercel.app',
+  coordinator: 'https://koeniglearnova.vercel.app',
+};
 
 // Get the base URL for portals based on role and company
 function getPortalUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: string): string {
   if (typeof window !== 'undefined') {
     const host = window.location.host;
 
-    // For development/localhost - use localhost URLs
+    // For development/localhost - use localhost URLs with path-based routing
     if (host.includes('localhost')) {
-      const port = role === 'learner' ? '3001' : role === 'coordinator' || role === 'admin' ? '3002' : '3000';
-      const roleParam = role === 'admin' ? '&role=admin' : '';
-      return `http://localhost:${port}?company=${companySlug}${roleParam}`;
+      const port = role === 'learner' ? '3000' : '3001';
+      const roleParam = role === 'admin' ? '?role=admin' : '';
+      return `http://localhost:${port}/${companySlug}${roleParam}`;
     }
   }
 
-  // Use custom subdomain format: {company}.learnova.training
-  if (useCustomDomain) {
-    const baseUrl = `https://${companySlug}.${LEARNOVA_DOMAIN}`;
-    switch (role) {
-      case 'learner':
-        return baseUrl;
-      case 'coordinator':
-        return `${baseUrl}/tc`;
-      case 'admin':
-        return `${baseUrl}/admin`;
-      default:
-        return baseUrl;
-    }
-  }
-
-  // Fallback to Vercel deployment URLs with query params
+  // Use path-based routing: student.learnova.training/{slug}
   switch (role) {
     case 'learner':
-      return `${FALLBACK_URLS.student}?company=${companySlug}`;
+      return `${PORTAL_URLS.student}/${companySlug}`;
     case 'coordinator':
-      return `${FALLBACK_URLS.coordinator}?company=${companySlug}`;
+      return `${PORTAL_URLS.coordinator}/${companySlug}`;
     case 'admin':
-      return `${FALLBACK_URLS.coordinator}?company=${companySlug}&role=admin`;
+      return `${PORTAL_URLS.coordinator}/${companySlug}?role=admin`;
     default:
-      return `${FALLBACK_URLS.student}?company=${companySlug}`;
+      return `${PORTAL_URLS.student}/${companySlug}`;
   }
 }
 
-// Generate display URL for credentials (user-friendly format)
+// Generate display URL for credentials (same as portal URL now)
 function getDisplayUrl(role: 'admin' | 'coordinator' | 'learner', companySlug: string): string {
-  // Always show the nice subdomain format in credentials
-  const baseUrl = `https://${companySlug}.${LEARNOVA_DOMAIN}`;
-  switch (role) {
-    case 'learner':
-      return baseUrl;
-    case 'coordinator':
-      return `${baseUrl}/tc`;
-    case 'admin':
-      return `${baseUrl}/admin`;
-    default:
-      return baseUrl;
-  }
+  return getPortalUrl(role, companySlug);
 }
 
 export default function CredentialsManager({ company, onClose }: CredentialsManagerProps) {
