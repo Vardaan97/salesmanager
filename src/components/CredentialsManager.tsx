@@ -270,6 +270,31 @@ This is an automated message from Koenig Learnova Platform.
     URL.revokeObjectURL(url);
   };
 
+  const downloadCredentialsCSV = () => {
+    const allCreds = Object.values(credentials);
+
+    // CSV header
+    let csvContent = 'Company,Role,Name,Portal URL,Email,Password,Generated Date\n';
+
+    // CSV rows
+    allCreds.forEach((cred) => {
+      // Escape fields that might contain commas
+      const escapedUrl = `"${cred.displayUrl}"`;
+      const escapedPassword = `"${cred.password}"`;
+      csvContent += `"${company.name}","${cred.role}","${cred.name}",${escapedUrl},"${cred.email}",${escapedPassword},"${new Date().toLocaleString()}"\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${company.slug}-credentials.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -459,13 +484,22 @@ This is an automated message from Koenig Learnova Platform.
 
         {/* Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <button
-            onClick={downloadCredentials}
-            className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            Download All Credentials
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={downloadCredentials}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Download TXT
+            </button>
+            <button
+              onClick={downloadCredentialsCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              Export CSV
+            </button>
+          </div>
           <button
             onClick={onClose}
             className="px-6 py-2 bg-cyan-600 text-white rounded-lg font-medium hover:bg-cyan-700 transition-colors"
